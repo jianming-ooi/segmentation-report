@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Active Customers — Segmentation Report</title>
+<style>
+  :root{
+    --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --bg:#f8fafc;
+    --card:#ffffff; --accent:#2563eb; --warn:#dc2626; --warnbg:#fef2f2;
+    --ok:#059669; --amber:#d97706; --purple:#7c3aed;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;font-size:15px;}
+  .wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px;}
+  header{border-bottom:3px solid var(--ink);padding-bottom:20px;margin-bottom:32px;}
+  .kicker{text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:700;color:var(--accent);}
+  h1{font-size:28px;line-height:1.25;margin:8px 0 6px;}
+  .sub{color:var(--muted);font-size:14px;}
+  h2{font-size:19px;margin:38px 0 14px;padding-left:12px;border-left:4px solid var(--accent);}
+  h3{font-size:15px;margin:24px 0 10px;}
+  p{margin:10px 0;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px 24px;margin:18px 0;}
+  .headline{background:#eff6ff;border:1px solid #bfdbfe;border-left:5px solid var(--accent);border-radius:10px;padding:20px 24px;margin:22px 0;}
+  .headline strong{color:var(--accent);}
+  .warn{background:var(--warnbg);border:1px solid #fecaca;border-left:5px solid var(--warn);border-radius:10px;padding:18px 22px;margin:18px 0;}
+  .warn strong{color:var(--warn);}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px;}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);}
+  th{background:#f1f5f9;font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;color:#334155;}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  tr.total td{font-weight:700;background:#f8fafc;}
+  .hi{background:#fffbeb;font-weight:700;}
+  /* bar chart */
+  .bar-row{display:grid;grid-template-columns:150px 1fr 92px;align-items:center;gap:10px;margin:7px 0;font-size:13.5px;}
+  .bar-track{background:#eef2f7;border-radius:5px;height:22px;position:relative;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:5px;display:flex;align-items:center;padding-left:8px;color:#fff;font-size:11.5px;font-weight:600;white-space:nowrap;min-width:38px;}
+  .bar-val{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;}
+  .f-raw{background:linear-gradient(90deg,#93c5fd,#2563eb);}
+  .f-clean{background:linear-gradient(90deg,#6ee7b7,#059669);}
+  .f-orange{background:linear-gradient(90deg,#fdba74,#ea580c);}
+  .f-purple{background:linear-gradient(90deg,#c4b5fd,#7c3aed);}
+  .legend{display:flex;gap:20px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:12px 0 2px;}
+  .legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;}
+  .lg-raw::before{background:#2563eb;} .lg-clean::before{background:#059669;}
+  /* stat grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:16px 0;}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:15px 16px;}
+  .stat .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;}
+  .stat .v{font-size:23px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums;}
+  .stat.red .v{color:var(--warn);} .stat.green .v{color:var(--ok);} .stat.amber .v{color:var(--amber);}
+  code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:12.5px;font-family:ui-monospace,Menlo,Consolas,monospace;}
+  ul{margin:10px 0;padding-left:22px;} li{margin:6px 0;}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;letter-spacing:.02em;}
+  .tag.red{background:#fee2e2;color:#b91c1c;} .tag.green{background:#d1fae5;color:#047857;}
+  .tag.blue{background:#dbeafe;color:#1d4ed8;}
+  .footer{margin-top:50px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px;}
+  .timeline{list-style:none;padding-left:0;margin:14px 0;}
+  .timeline li{position:relative;padding:8px 0 8px 26px;border-left:2px solid var(--line);margin-left:6px;}
+  .timeline li::before{content:"";position:absolute;left:-7px;top:15px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid #fff;}
+  .timeline li.storm::before{background:var(--warn);}
+  .timeline li.ok::before{background:var(--ok);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Segment Health &middot; Root-Cause Analysis</div>
+    <h1>Why Active Customers Dropped on the Sep&nbsp;20 Build</h1>
+    <div class="sub">Property 565043719 (“Oauth RevMedia&nbsp;–&nbsp;Live”) &middot; anomaly dated <strong>2026-08-15</strong> &middot; prepares a report for leadership</div>
+  </header>
+
+  <div class="headline">
+    <strong>One-line answer.</strong> The ~23% drop in active customers between the <strong>Sep&nbsp;13</strong> and <strong>Sep&nbsp;20</strong> builds is a <strong>data artifact, not a real decline in user activity</strong>. A one-day <strong>login/authorize event storm on 2026-08-15</strong> inflated every build whose 30-day window covered that date. On the Sep&nbsp;20 build the date fell out of the window and the metric returned to its true baseline.
+  </div>
+
+  <h2>1. Metric definition</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Active customer</strong> — a <code>customer_id</code> with <strong>at least one linked <code>user_id</code></strong> (joined via <code>bos_customer_users</code>) that produced reading behavior (<code>cdp_at_user_behavior</code>) <strong>inside the trailing 30-day window</strong>.</li>
+      <li><strong>Window</strong> — rolling 30 days, evaluated at each build cut-off (inclusive both ends).</li>
+      <li><strong>Reading time</strong> — <code>last_seen_time</code> (event grain, resolvable to the second).</li>
+    </ul>
+  </div>
+
+  <h2>2. The four builds — the signal</h2>
+  <table>
+    <thead>
+      <tr><th>Build cut-off</th><th>30-day window</th><th class="num">Active (raw)</th><th class="num">Active (excl. Aug&nbsp;15)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Sep 02, 2026 10:42:45</td><td>Aug 03 → Sep 02</td><td class="num">132,964</td><td class="num">95,755</td></tr>
+      <tr><td>Sep 06, 2026 10:03:20</td><td>Aug 07 → Sep 06</td><td class="num">134,840</td><td class="num">97,807</td></tr>
+      <tr><td>Sep 13, 2026 10:03:01</td><td>Aug 14 → Sep 13</td><td class="num">135,819</td><td class="num">98,621</td></tr>
+      <tr class="hi"><td>Sep 20, 2026 10:02:08</td><td>Aug 21 → Sep 20</td><td class="num">94,281</td><td class="num">94,281</td></tr>
+    </tbody>
+  </table>
+
+  <div class="bar-row"><div>Sep 02 <em>raw</em></div><div class="bar-track"><div class="bar-fill f-raw" style="width:97.9%">132,964</div></div><div class="bar-val">132,964</div></div>
+  <div class="bar-row"><div>Sep 06 <em>raw</em></div><div class="bar-track"><div class="bar-fill f-raw" style="width:99.3%">134,840</div></div><div class="bar-val">134,840</div></div>
+  <div class="bar-row"><div>Sep 13 <em>raw</em></div><div class="bar-track"><div class="bar-fill f-raw" style="width:100%">135,819</div></div><div class="bar-val">135,819</div></div>
+  <div class="bar-row"><div>Sep 20 <em>raw</em></div><div class="bar-track"><div class="bar-fill f-raw" style="width:69.4%">94,281</div></div><div class="bar-val">94,281</div></div>
+
+  <div class="legend"><span class="lg-raw">Raw count</span></div>
+
+  <p style="margin-top:18px;"><strong>Read it this way:</strong> the first three builds are effectively <strong>flat</strong> (~133–136k, within ~2%). Then the Sep&nbsp;20 build falls <strong>~30,000 (&minus;23%)</strong>. The <em>only</em> structural difference is whether <strong>2026-08-15 sits inside the window</strong> — the first three windows contain it, the Sep&nbsp;20 window starts Aug&nbsp;21 and does not.</p>
+
+  <h3>The same builds, with Aug&nbsp;15 removed</h3>
+  <div class="bar-row"><div>Sep 02 <em>clean</em></div><div class="bar-track"><div class="bar-fill f-clean" style="width:97.1%">95,755</div></div><div class="bar-val">95,755</div></div>
+  <div class="bar-row"><div>Sep 06 <em>clean</em></div><div class="bar-track"><div class="bar-fill f-clean" style="width:99.2%">97,807</div></div><div class="bar-val">97,807</div></div>
+  <div class="bar-row"><div>Sep 13 <em>clean</em></div><div class="bar-track"><div class="bar-fill f-clean" style="width:100%">98,621</div></div><div class="bar-val">98,621</div></div>
+  <div class="bar-row"><div>Sep 20 <em>clean</em></div><div class="bar-track"><div class="bar-fill f-clean" style="width:95.6%">94,281</div></div><div class="bar-val">94,281</div></div>
+  <div class="legend"><span class="lg-clean">Excluding 2026-08-15</span></div>
+  <p style="margin-top:14px;">Once the anomalous day is removed, all four builds converge to a band of <strong>94k–99k</strong> — a normal weekly variation. The Aug&nbsp;15 date was adding roughly <strong>+37,000 customers</strong> (~39%) to each affected build.</p>
+
+  <h2>3. What actually happened on 2026-08-15</h2>
+  <div class="card">
+    <p>Property <code>565043719</code> is <strong>“Oauth RevMedia – Live”</strong> (<code>oauth.revmedia.my</code>) — a <strong>shared OAuth / sign-in service</strong> used by RevMedia products (Tonton, Wowshop, BHarian, Waktu Solat Digital …). It is <strong>not a newspaper-reading property</strong>. On Aug&nbsp;15 its volume spiked roughly 10–12× <strong>for a single day</strong> and reverted immediately.</p>
+    <table>
+      <thead><tr><th>Measure (property 565043719)</th><th class="num">Aug 14</th><th class="num">Aug 15</th><th class="num">Aug 16</th></tr></thead>
+      <tbody>
+        <tr><td>Users in behavior table</td><td class="num">6,967</td><td class="num hi">69,206</td><td class="num">~11,142</td></tr>
+        <tr><td>Pageview events</td><td class="num">–</td><td class="num hi">179,238</td><td class="num">–</td></tr>
+        <tr><td><code>sign_in</code> events</td><td class="num">5,040</td><td class="num hi">83,056</td><td class="num">–</td></tr>
+        <tr><td><code>sign_up</code> events</td><td class="num">1,746</td><td class="num hi">20,269</td><td class="num">–</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Timeline of the spike</h3>
+  <ul class="timeline">
+    <li>Baseline day (Aug 14) — ~7,000 users, ~5,000 sign-ins.</li>
+    <li class="storm"><strong>Aug 15 — storm</strong>: ~69,000 users / 83,000 sign-ins, concentrated in a short burst around <strong>21:00–21:27 UTC</strong>, peaking ≈2,200 events/minute.</li>
+    <li>Behavior fingerprint: <strong>~67% of users were one-shot</strong> (single event); only ~420 returned the next day, decaying to &lt;170/day.</li>
+    <li>Failing endpoint <code>/callbacks/google</code> jumped <strong>211 → 6,127</strong> events with the error <em>“Problem with your sign in … TypeError: Cannot read properties of undefined.”</em></li>
+    <li class="ok">Aug 16 onward — volume reverts to baseline.</li>
+  </ul>
+  <div class="warn">
+    <strong>Diagnosis:</strong> these are the fingerprints of a <strong>login / authorize storm</strong> (bulk device pairing, an SSO retry loop, or an OAuth incident) — <strong>not organic reading behavior</strong>. The combination of an instantaneous spike, a failing callback, and mass one-shot users is not normal traffic.
+  </div>
+
+  <h2>4. Who these customers are — <code>origin_source</code></h2>
+  <div class="card">
+    <p><strong>Method:</strong> sign-in users on Aug&nbsp;15 at property 565043719 → <code>bos_customer_users</code> (by <code>user_id</code>) → <code>bos_customers</code> (by <code>customer_id</code>). This yields <strong>44,762 customers</strong>.</p>
+    <p style="font-size:13.5px;color:var(--muted);"><em>Note on grain:</em> <code>origin_source</code> is empty at the <em>event</em> level (<code>evt_sign_in_user</code>) but fully populated at the <em>customer</em> level (<code>bos_customers</code>). The customer-level field is the one that carries meaning.</p>
+  </div>
+
+  <div class="bar-row"><div>headend-api.tonton</div><div class="bar-track"><div class="bar-fill f-orange" style="width:69.7%">69.7%</div></div><div class="bar-val">31,215</div></div>
+  <div class="bar-row"><div>vote.tonton</div><div class="bar-track"><div class="bar-fill f-orange" style="width:17.5%">17.5%</div></div><div class="bar-val">7,813</div></div>
+  <div class="bar-row"><div>SSO</div><div class="bar-track"><div class="bar-fill f-purple" style="width:5.7%">&nbsp;</div></div><div class="bar-val">2,567</div></div>
+  <div class="bar-row"><div>oauth.revmedia.my</div><div class="bar-track"><div class="bar-fill f-purple" style="width:3.7%">&nbsp;</div></div><div class="bar-val">1,645</div></div>
+  <div class="bar-row"><div>tonton.com.my</div><div class="bar-track"><div class="bar-fill f-purple" style="width:1.6%">&nbsp;</div></div><div class="bar-val">704</div></div>
+  <div class="bar-row"><div>all others</div><div class="bar-track"><div class="bar-fill f-purple" style="width:1.8%">&nbsp;</div></div><div class="bar-val">818</div></div>
+
+  <table>
+    <thead><tr><th>#</th><th><code>origin_source</code> (customer)</th><th class="num">Customers</th><th class="num">Share</th></tr></thead>
+    <tbody>
+      <tr class="hi"><td>1</td><td>headend-api.tonton.com.my</td><td class="num">31,215</td><td class="num">69.7%</td></tr>
+      <tr class="hi"><td>2</td><td>vote.tonton.com.my</td><td class="num">7,813</td><td class="num">17.5%</td></tr>
+      <tr><td>3</td><td>SSO</td><td class="num">2,567</td><td class="num">5.7%</td></tr>
+      <tr><td>4</td><td>oauth.revmedia.my</td><td class="num">1,645</td><td class="num">3.7%</td></tr>
+      <tr><td>5</td><td>tonton.com.my</td><td class="num">704</td><td class="num">1.6%</td></tr>
+      <tr><td>6</td><td>watch.tonton.com.my</td><td class="num">294</td><td class="num">0.7%</td></tr>
+      <tr><td>7</td><td>wowtix.com.my</td><td class="num">143</td><td class="num">0.3%</td></tr>
+      <tr><td>8</td><td>waktusolat.digital</td><td class="num">131</td><td class="num">0.3%</td></tr>
+      <tr><td>9</td><td>rewards.tonton.com.my</td><td class="num">86</td><td class="num">0.2%</td></tr>
+      <tr><td>10</td><td>microsite.tonton.com.my</td><td class="num">56</td><td class="num">0.1%</td></tr>
+      <tr><td>11</td><td>redeem.tonton.com.my</td><td class="num">46</td><td class="num">0.1%</td></tr>
+      <tr><td>12</td><td>wowshop.com.my</td><td class="num">30</td><td class="num">0.1%</td></tr>
+      <tr><td>13</td><td>contest.tonton.com.my</td><td class="num">11</td><td class="num">&lt;0.1%</td></tr>
+      <tr><td>–</td><td>others (xtra, localhost, nst, siraplimau, vote.revid, bharian, staging-vote)</td><td class="num">~18</td><td class="num">&lt;0.1%</td></tr>
+      <tr class="total"><td></td><td>Total</td><td class="num">44,762</td><td class="num">100%</td></tr>
+    </tbody>
+  </table>
+
+  <div class="grid">
+    <div class="stat amber"><div class="lbl">Tonton-derived (headend + vote + site)</div><div class="v">≈89%</div></div>
+    <div class="stat"><div class="lbl">SSO + oauth</div><div class="v">≈9%</div></div>
+    <div class="stat"><div class="lbl">All other sources</div><div class="v">≈2%</div></div>
+  </div>
+
+  <p><strong>Interpretation.</strong> The storm is overwhelmingly <strong>Tonton-derived customers</strong> — <code>headend-api</code> + <code>vote</code> + <code>tonton.com.my</code> ≈ <strong>89%</strong> — plus <strong>SSO + oauth ≈ 9%</strong>. Note that <code>origin_source</code> reflects <em>where the customer originated at account creation</em>; it tells us <em>who</em> these customers are, but <strong>not</strong> <em>why</em> they all signed in on the same day.</p>
+
+  <h2>5. Conclusion — the mechanism in one chain</h2>
+  <div class="card">
+    <ol>
+      <li>The shared OAuth property <code>565043719</code> experienced a <strong>one-day login storm on 2026-08-15</strong> (~69k users, ~83k sign-ins, mostly Tonton-origin, mostly one-shot).</li>
+      <li>Those logins created reading-behavior records dated <strong>2026-08-15</strong>.</li>
+      <li>Every 30-day segment build whose window contained Aug&nbsp;15 (<strong>Sep 02, Sep 06, Sep 13</strong>) inherited these customers → counts inflated by <strong>~37,000</strong>.</li>
+      <li>The <strong>Sep 20</strong> build starts on <strong>Aug 21</strong>, so Aug&nbsp;15 falls out of the window → the metric drops back to its <strong>true baseline of ~94,000</strong>.</li>
+    </ol>
+    <p style="margin-bottom:0;">In short: <strong>the “drop” is the artifact leaving the window — not users leaving the platform.</strong></p>
+  </div>
+
+  <h2>6. Recommendation</h2>
+  <div class="card">
+    <ul>
+      <li><span class="tag green">Use for trend comparison</span> &nbsp;Report the <strong>Aug-15-excluded</strong> series: <strong>95,755 / 97,807 / 98,621 / 94,281</strong> (94k–99k, stable).</li>
+      <li><span class="tag red">Do not compare raw</span> &nbsp;The raw series (<strong>132,964 / 134,840 / 135,819 / 94,281</strong>) is not comparable across Aug&nbsp;15 — the first three are inflated.</li>
+      <li><span class="tag blue">Data hygiene</span> &nbsp;Confirm whether Aug&nbsp;15 at property <code>565043719</code> was genuine traffic or a load/reprocess/incident. If not genuine, <strong>exclude it from all reporting</strong> and consider re-processing the affected builds.</li>
+      <li><span class="tag blue">Guardrail</span> &nbsp;Add an automated <strong>daily volume-anomaly check per property</strong> so a single-day spike cannot silently propagate into 30 days of segments.</li>
+    </ul>
+  </div>
+
+  <h2>7. Caveats</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Timezone.</strong> Timestamps are treated as <strong>UTC</strong> (matching the <code>Z</code> suffix in the data). If the intended cut-off is local (GMT+7), the day boundaries shift and the numbers will change.</li>
+      <li><strong>Customer linkage.</strong> Two linkage paths differ slightly: via the view’s <code>customer_id</code> = <strong>45,093</strong> customers, via the <code>bos_customer_users</code> bridge = <strong>44,762</strong> (~0.7% gap). The bridge figure is used here for consistency with the active-customer definition.</li>
+      <li><strong>Root cause not yet confirmed.</strong> Whether the Aug&nbsp;15 spike was a campaign, a bulk device-pairing, or an OAuth defect has <strong>not</strong> been verified at source. Suggested next checks: infrastructure/SSO logs for 20:00–22:00 UTC on Aug&nbsp;15; the share of users using new tokens; and <code>sign_in_method</code> (currently empty at this property).</li>
+      <li><strong>Correlation, not causation.</strong> The link between the sign-in storm and the inflated builds is established by timing and mechanism; it is a strong operational inference, not a controlled proof.</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    Sources: <code>cdp_at_user_behavior</code>, <code>bos_customer_users</code>, <code>bos_customers</code>, <code>evt_sign_in_user</code>, <code>evt_sign_up_user</code>, <code>evt_view_pageview</code>, <code>bos_insight_property</code>.
+    Anomaly date: <strong>2026-08-15</strong> · Property: <strong>565043719</strong> (“Oauth RevMedia – Live”).
+    Figures reflect the analysis as performed; verify against source before external distribution.
+  </div>
+
+</div>
+</body>
+</html>
